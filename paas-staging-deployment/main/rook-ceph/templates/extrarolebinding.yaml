@@ -1,0 +1,45 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rook-csi-psp
+  namespace: rook-ceph
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rook-ceph-system-psp-user
+subjects:
+- kind: ServiceAccount
+  name: rook-csi-cephfs-plugin-sa
+  namespace: rook-ceph
+- kind: ServiceAccount
+  name: rook-csi-cephfs-provisioner-sa
+  namespace: rook-ceph
+- kind: ServiceAccount
+  name: rook-csi-rbd-plugin-sa
+  namespace: rook-ceph
+- kind: ServiceAccount
+  name: rook-csi-rbd-provisioner-sa
+  namespace: rook-ceph
+- kind: ServiceAccount
+  name: default # unfortunately some resources, like the mon canary deployment, run with default service account
+  namespace: rook-ceph
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: psp:rook
+  labels:
+    operator: rook
+    storage-backend: ceph
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+rules:
+- apiGroups:
+  - policy
+  resources:
+  - podsecuritypolicies
+  resourceNames:
+  - 00-rook-ceph-operator
+  verbs:
+  - use

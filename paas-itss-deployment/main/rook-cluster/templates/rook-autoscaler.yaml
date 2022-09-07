@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rook-ceph-autoscaler
+  namespace: rook-ceph
+  labels:
+    app: rook-rook-autoscaler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rook-rook-autoscaler
+  template:
+    metadata:
+      labels:
+        app: rook-rook-autoscaler
+    spec:
+      dnsPolicy: ClusterFirstWithHostNet
+      serviceAccount: rook-ceph-mgr
+      containers:
+      - name: rook-rook-autoscaler
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: IfNotPresent
+        command: ["/entrypoint.sh"]
+        args:
+        env:
+          - name: ROOK_CEPH_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: rook-ceph-mon
+                key: ceph-username
+          - name: ROOK_CEPH_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: rook-ceph-mon
+                key: ceph-secret
+        volumeMounts:
+          - mountPath: /etc/ceph
+            name: ceph-config
+          - name: mon-endpoint-volume
+            mountPath: /etc/rook
+          - name: entrypoint
+            mountPath: /entrypoint.sh
+            subPath: entrypoint.sh
+      volumes:
+        - name: mon-endpoint-volume
+          configMap:
+            name: rook-ceph-mon-endpoints
+            items:
+            - key: data
+              path: mon-endpoints
+        - name: ceph-config
+          emptyDir: {}
+        - name: entrypoint
+          configMap:
+            name: rook-autoscaler
+            defaultMode: 0777
+      tolerations:
+        - key: "node.kubernetes.io/unreachable"
+          operator: "Exists"
+          effect: "NoExecute"
+          tolerationSeconds: 5

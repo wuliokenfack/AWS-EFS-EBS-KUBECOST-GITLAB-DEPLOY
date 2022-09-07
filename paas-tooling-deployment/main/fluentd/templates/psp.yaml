@@ -1,0 +1,24 @@
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: pod-security-policy-amazon-cloudwatch
+spec:
+  allowPrivilegeEscalation: false
+  allowedHostPaths:
+  - pathPrefix: /var/lib/docker/containers
+  - pathPrefix: /run/log/journal
+  - pathPrefix: /var/log/dmesg
+  - pathPrefix: /var/log
+  fsGroup:
+    rule: RunAsAny
+  runAsUser:
+    rule: RunAsAny
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  volumes: 
+  - configMap
+  - emptyDir
+  - hostPath
+  - secret

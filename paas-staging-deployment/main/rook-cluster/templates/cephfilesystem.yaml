@@ -1,0 +1,53 @@
+apiVersion: ceph.rook.io/v1
+kind: CephFilesystem
+metadata:
+  name: rook-cephfs
+  namespace: rook-ceph
+spec:
+  metadataPool:
+    replicated:
+      size: 3
+  dataPools:
+    - replicated:
+        size: 3
+  preservePoolsOnDelete: true
+  metadataServer:
+    activeCount: 3
+    activeStandby: true
+    resources:
+      requests:
+        cpu: "2"
+        memory: "3Gi"
+    placement:
+      tolerations:
+      - key: storage-only
+        operator: Equal
+        value: "true"
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: storage-only
+              operator: In
+              values:
+              - "true"
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - rook-ceph-mds
+            topologyKey: "topology.kubernetes.io/zone"
+        - weight: 50
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - rook-ceph-mds
+            topologyKey: "kubernetes.io/hostname"

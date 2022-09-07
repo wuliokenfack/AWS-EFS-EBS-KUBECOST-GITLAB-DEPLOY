@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app.kubernetes.io/name: kube2iam
+    app.kubernetes.io/instance: kube2iam
+  name: kube2iam
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kube2iam
+      app.kubernetes.io/instance: kube2iam
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kube2iam
+        app.kubernetes.io/instance: kube2iam
+    spec:      
+      containers:
+        - name: kube2iam
+          image: jtblin/kube2iam:0.10.9
+          imagePullPolicy: "IfNotPresent"
+          args:
+            - --host-interface=cali+
+            - --node=$(NODE_NAME)
+            - --host-ip=$(HOST_IP)
+            - --iptables=true
+            - --auto-discover-base-arn
+            - --app-port=8181
+            - --metrics-port=8181
+          env:
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: AWS_REGION
+              value: {{ .Values.AWS_REGION }}
+          ports:
+            - name: http
+              containerPort: 8181
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8181
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+            timeoutSeconds: 1
+          resources:
+            {}
+          securityContext:
+            privileged: true
+      hostNetwork: true
+      serviceAccountName: kube2iam
+      tolerations:
+        []
+  updateStrategy:
+    type: OnDelete

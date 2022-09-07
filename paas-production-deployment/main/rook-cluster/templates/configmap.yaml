@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rook-autoscaler
+data:
+  entrypoint.sh: | 
+{{ tpl (.Files.Get "files/scale_ceph_cluster.sh") . | indent 4}}
